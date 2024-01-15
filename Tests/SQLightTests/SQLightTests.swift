@@ -1,7 +1,7 @@
 import XCTest
-@testable import EpistemSQLite
+@testable import SQLight
 
-final class EpistemSQLiteTests: XCTestCase {
+final class SQLightTests: XCTestCase {
 
     func testInfo() {
         print("Version string: \(SQLight.versionString)")
