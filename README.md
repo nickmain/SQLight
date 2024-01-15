@@ -1,6 +1,6 @@
 A minimal Swift wrapper for SQLite.
 
-SQLight is not intended to hide the underlying SQLite API just make it easier to
+SQLight is not intended to hide the underlying SQLite API, just make it easier to
 use from Swift.
 
 Some extra features are:
