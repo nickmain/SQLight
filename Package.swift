@@ -4,20 +4,31 @@
 import PackageDescription
 
 let package = Package(
-    name: "EpistemSQLite",
+    name: "SQLight",
+    platforms: [.iOS(.v17), .tvOS(.v17), .macOS(.v14)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "EpistemSQLite",
-            targets: ["EpistemSQLite"]),
+            name: "SQLight",
+            targets: ["SQLight"]),
+        .library(
+            name: "SQLParser",
+            targets: ["SQLParser"]),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "EpistemSQLite"),
+            name: "SQLight"),
         .testTarget(
-            name: "EpistemSQLiteTests",
-            dependencies: ["EpistemSQLite"]),
+            name: "SQLightTests",
+            dependencies: ["SQLight"],
+            resources: [.copy("Resources/databases")]),
+
+        .target(
+            name: "SQLParser"),
+        .testTarget(
+            name: "SQLParserTests",
+            dependencies: ["SQLParser"]),
     ]
 )
