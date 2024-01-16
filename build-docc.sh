@@ -8,6 +8,6 @@ xcrun xcodebuild docbuild \
 xcrun docc process-archive transform-for-static-hosting \
     "$PWD/.derivedData/Build/Products/Debug-iphonesimulator/SQLight.doccarchive" \
     --output-path ".docs" \
-    --hosting-base-path "sqlight"
+    --hosting-base-path "SQLight"
 
 echo '<script>window.location.href += "documentation/sqlight"</script>' > .docs/index.html
