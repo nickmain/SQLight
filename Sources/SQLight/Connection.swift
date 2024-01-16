@@ -28,7 +28,7 @@ public extension SQLight {
         /// Use ``createInMemoryDatabase()`` to create an in-memory database.
         public static let inMemoryDatabase = ":memory:"
 
-        /// The pointer to the "sqlite3" structure for the connection.
+        /// The pointer to the ["sqlite3"](https://www.sqlite.org/c3ref/sqlite3.html) structure for the connection.
         public let sqlite3ptr: OpaquePointer
 
         /// The database connection name - either the file path or ``inMemoryDatabase``

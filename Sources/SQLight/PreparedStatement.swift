@@ -26,7 +26,9 @@ public extension SQLight {
         /// The number of columns that the statement will return in each result row.
         public var columnCount: Int { Int(SQLite3.sqlite3_column_count(statementPtr)) }
 
-        /// Reset the prepared statement
+        /// Reset the prepared statement.
+        ///
+        /// This does not clear any parameters that were previously set.
         ///
         /// See [the sqlite3_reset() function](https://www.sqlite.org/c3ref/reset.html)
         public func reset() throws {
@@ -45,11 +47,11 @@ public extension SQLight {
             case done
         }
 
-        /// Perform a step operation for a statement that does not return row data.
+        /// Perform a step operation to fetch the first or next row of column values.
         ///
-        /// - Returns: the step result.
+        /// - Returns: The step result.
         ///            If this call returns ``StepResult/done`` then ``step()`` should be
-        ///            called again without calling ``reset()`` first.
+        ///            not be called again without calling ``reset()`` first.
         ///
         @discardableResult
         public func step() throws -> StepResult {
