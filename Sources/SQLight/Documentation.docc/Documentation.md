@@ -12,20 +12,3 @@ This library deliberately avoids concurrency concerns. SQLite itself will serial
 made on a connection from different threads, so everything should be OK. However, this library
 assumes that it will be used by code that uses an actor or other such mechanism to manage
 concurrency.
-
-## Topics
-
-### Creating a database connection
-
-- ``SQLight/Connection/createInMemoryDatabase()``
-- ``SQLight/Connection/open(file:option:)``
-
-### Registering SQL functions implemented in Swift
-
-- ``SQLight/Connection/createFunction(named:numArgs:funcBody:)``
-- ``SQLight/Connection/createFunction(named:numArgs:factory:)``
-
-### Executing SQL
-
-- ``SQLight/Connection/execute(sql:callback:)``
-- ``SQLight/Connection/prepare(statement:)``
