@@ -24,6 +24,11 @@ public extension SQLight.PreparedStatement {
         .init(rawValue: Int(SQLite3.sqlite3_column_type(statementPtr, Int32(index)))) ?? .null
     }
 
+    /// Whether a column is null
+    func isColumnNull(at index: Int) -> Bool {
+        SQLite3.sqlite3_column_type(statementPtr, Int32(index)) == SQLight.ValueType.null.rawValue
+    }
+
     /// Get the value of a column as a Double
     func doubleValue(at index: Int) -> Double {
         SQLite3.sqlite3_column_double(statementPtr, Int32(index))
@@ -55,5 +60,18 @@ public extension SQLight.PreparedStatement {
 
         let size = SQLite3.sqlite3_column_bytes(statementPtr, Int32(index))
         return Data(bytes: ptr, count: Int(size))
+    }
+
+    /// Get a column as a wrapped value
+    ///
+    /// - Returns: the value as its actual type or ``SQLight/Value/null`` if the column type is undefined
+    func value(at index: Int) -> SQLight.Value {
+        switch columnType(at: index) {
+        case .int:    .int(integerValue(at: index))
+        case .double: .double(doubleValue(at: index))
+        case .string: if let value = stringValue(at: index) { .string(value) } else { .null }
+        case .data:   if let value = dataValue(at: index) { .data(value) } else { .null }
+        case .null:   .null
+        }
     }
 }

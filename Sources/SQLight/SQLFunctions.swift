@@ -39,7 +39,6 @@ public extension SQLight {
         ///
         /// - Throws: an error message that will be passed to SQLite. Use ``SQLight/Error/message(_:)``
         ///           otherwise the error's localized description will be used.
-
         open func stepCall(args: [Value]) throws {}
 
         /// Final call to return the aggregate result
@@ -253,4 +252,20 @@ fileprivate func releaseWrapper(_ wrapperPtr: UnsafeMutableRawPointer?) {
 
     // take a retained reference in order to own the wrapper and then release it
     let _: AnyObject = Unmanaged.fromOpaque(wrapperPtr).takeRetainedValue()
+}
+
+extension SQLight.Value {
+
+    func setReturnValue(for sqlite3_context: OpaquePointer) {
+        switch self {
+        case .null:              SQLite3.sqlite3_result_null(sqlite3_context)
+        case .int(let value):    SQLite3.sqlite3_result_int64(sqlite3_context, Int64(value))
+        case .double(let value): SQLite3.sqlite3_result_double(sqlite3_context, value)
+        case .string(let value): SQLite3.sqlite3_result_text(sqlite3_context, value, -1, Self.SQLITE_TRANSIENT)
+        case .data(let value):
+            value.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+                SQLite3.sqlite3_result_blob(sqlite3_context, ptr.baseAddress, Int32(ptr.count), Self.SQLITE_TRANSIENT)
+            }
+        }
+    }
 }

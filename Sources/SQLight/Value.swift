@@ -21,6 +21,17 @@ public extension SQLight {
 
         /// The column value is null
         case null = 5
+
+        /// The SQLite storage class of the type
+        public var sqlStorageClass: String {
+            switch self {
+            case .int:    "INTEGER"
+            case .double: "REAL"
+            case .string: "TEXT"
+            case .data:   "BLOB"
+            case .null:   "NULL"
+            }
+        }
     }
 
     /// A value of one of the possible SQLite types
@@ -61,19 +72,6 @@ public extension SQLight {
                     self = .data(Data(bytes: bytePtr, count: Int(size)))
                 } else {
                     self = .null
-                }
-            }
-        }
-
-        internal func setReturnValue(for sqlite3_context: OpaquePointer) {
-            switch self {
-            case .null:              SQLite3.sqlite3_result_null(sqlite3_context)
-            case .int(let value):    SQLite3.sqlite3_result_int64(sqlite3_context, Int64(value))
-            case .double(let value): SQLite3.sqlite3_result_double(sqlite3_context, value)
-            case .string(let value): SQLite3.sqlite3_result_text(sqlite3_context, value, -1, Self.SQLITE_TRANSIENT)
-            case .data(let value):
-                value.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
-                    SQLite3.sqlite3_result_blob(sqlite3_context, ptr.baseAddress, Int32(ptr.count), Self.SQLITE_TRANSIENT)
                 }
             }
         }

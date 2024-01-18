@@ -16,3 +16,7 @@
 
 - ``SQLight/Connection/execute(sql:callback:)``
 - ``SQLight/Connection/prepare(statement:)``
+
+### Virtual Tables
+
+- ``SQLight/Connection/register(module:)``

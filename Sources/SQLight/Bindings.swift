@@ -33,6 +33,14 @@ public extension SQLight.PreparedStatement {
         return String(cString: ptr)
     }
 
+    /// Bind a parameter to a null value
+    func bindParameterToNull(at index: Int) throws {
+        let rc = SQLite3.sqlite3_bind_null(statementPtr, Int32(index))
+        guard rc == SQLite3.SQLITE_OK else {
+            throw SQLight.Error.result(.fromSQLite(code: rc))
+        }
+    }
+
     /// Bind a parameter to an integer value
     func bindParameter(at index: Int, to value: Int) throws {
         let rc = SQLite3.sqlite3_bind_int64(statementPtr, Int32(index), Int64(value))
@@ -73,5 +81,21 @@ public extension SQLight.PreparedStatement {
         guard rc == SQLite3.SQLITE_OK else {
             throw SQLight.Error.result(.fromSQLite(code: rc))
         }
+    }
+
+    /// Bind a parameter to a wrapped value
+    func bindParameter(at index: Int, to value: SQLight.Value) throws {
+        switch value {
+        case .null:            try bindParameterToNull(at: index)
+        case .int(let val):    try bindParameter(at: index, to: val)
+        case .double(let val): try bindParameter(at: index, to: val)
+        case .string(let val): try bindParameter(at: index, to: val)
+        case .data(let val):   try bindParameter(at: index, to: val)
+        }
+    }
+
+    /// Clear all the parameter bindings, setting them to null
+    func clearBindings() {
+        SQLite3.sqlite3_clear_bindings(statementPtr)
     }
 }

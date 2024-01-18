@@ -15,3 +15,5 @@
 - ``integerValue(at:)``
 - ``stringValue(at:)``
 - ``dataValue(at:)``
+- ``isColumnNull(at:)``
+- ``value(at:)``

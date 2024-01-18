@@ -1,5 +1,7 @@
 A minimal Swift wrapper for SQLite.
 
+Still under active development - not yet ready for production use.
+
 SQLight is not intended to hide the underlying SQLite API, just make it easier to
 use from Swift.
 

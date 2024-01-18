@@ -17,7 +17,8 @@ public extension SQLight {
     ///
     class PreparedStatement {
 
-        internal let statementPtr: OpaquePointer
+        /// The pointer to ["sqlite3_stmt"](https://www.sqlite.org/c3ref/stmt.html) structure for the statement.
+        public let statementPtr: OpaquePointer
 
         fileprivate init(statementPtr: OpaquePointer) {
             self.statementPtr = statementPtr
