@@ -8,7 +8,7 @@ public extension SQLight {
     /// Base class for virtual table implementations
     ///
     /// Note that the ``SQLight/Module`` will keep a strong reference to any instances created in response
-    /// to SQLight create or connect requests in order to ensure that the 
+    /// to SQLite create or connect requests in order to ensure that the 
     /// [sqlite3_vtab](https://www.sqlite.org/c3ref/vtab.html) passed to SQLight remains allocated.
     /// Make sure that there are no strong references from Tables back to Modules.
     ///
