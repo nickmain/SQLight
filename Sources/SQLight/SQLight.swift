@@ -22,7 +22,7 @@ public struct SQLight {
     /// The source id and time of the SQLite build
     public static var sourceId: String { SQLite3.SQLITE_SOURCE_ID }
 
-    /// Whether the library was compiled with thread-safety mechanisms (mutexes)
+    /// Whether the SQLite3 library was compiled with thread-safety mechanisms (mutexes)
     public static var isThreadsafe: Bool { SQLite3.sqlite3_threadsafe() != 0 }
 
     private init() {}

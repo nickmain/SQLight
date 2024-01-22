@@ -110,38 +110,38 @@ fileprivate var sqlite3Module: SQLite3.sqlite3_module = .init(
     iVersion: 3,
 
     // tables
-    xCreate: xCreate(_:_:_:_:_:_:),
-    xConnect: xConnect(_:_:_:_:_:_:),
-    xBestIndex: xBestIndex(_:_:),
+    xCreate:     xCreate(_:_:_:_:_:_:),
+    xConnect:    xConnect(_:_:_:_:_:_:),
+    xBestIndex:  xBestIndex(_:_:),
     xDisconnect: xDisconnect(_:),
-    xDestroy: xDestroy(_:),
+    xDestroy:    xDestroy(_:),
 
     // cursors
-    xOpen: xOpen(_:_:),
-    xClose: xClose(_:),
+    xOpen:   xOpen(_:_:),
+    xClose:  xClose(_:),
     xFilter: xFilter(_:_:_:_:_:),
-    xNext: xNext(_:),
-    xEof: xEof(_:),
+    xNext:   xNext(_:),
+    xEof:    xEof(_:),
     xColumn: xColumn(_:_:_:),
-    xRowid: xRowid(_:_:),
-    
+    xRowid:  xRowid(_:_:),
+
     // inserts/deletes/updates
     xUpdate: xUpdate(_:_:_:_:),
 
     // transaction support not yet implemented
-    xBegin: nil, // xBegin(_:),
-    xSync: nil, // xSync(_:),
-    xCommit: nil, // xCommit(_:),
+    xBegin:    nil, // xBegin(_:),
+    xSync:     nil, // xSync(_:),
+    xCommit:   nil, // xCommit(_:),
     xRollback: nil, // xRollback(_:),
 
-    xFindFunction: nil,  // not implemented
+    xFindFunction: nil, // not implemented
 
     // table renaming not supported
     xRename: nil, // xRename(_:_:),
 
     // savepoints not yet implemented
-    xSavepoint: nil, // xSavepoint(_:_:),
-    xRelease: nil, // xRelease(_:_:),
+    xSavepoint:  nil, // xSavepoint(_:_:),
+    xRelease:    nil, // xRelease(_:_:),
     xRollbackTo: nil, // xRollbackTo(_:_:),
 
     xShadowName: xShadowName(_:)
@@ -258,12 +258,64 @@ fileprivate func cursor(from pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?
 }
 
 fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pIndexInfo: UnsafeMutablePointer<sqlite3_index_info>?) -> Int32 {
-    guard let table = table(from: pVTab) else { return SQLite3.SQLITE_ERROR }
-    
-    // TODO
-    SQLight.logger.debug("xBestIndex")
+    guard let table = table(from: pVTab), let pIndexInfo else { return SQLite3.SQLITE_ERROR }
 
-    return SQLite3.SQLITE_OK
+    var constraints  = [SQLight.Table.Index.Constraint]()
+    let constraintCount = Int(pIndexInfo.pointee.nConstraint)
+    if constraintCount > 0 {
+        for constraintIndex in 0..<constraintCount {
+            let constraint = pIndexInfo.pointee.aConstraint[constraintIndex]
+            let colIndex = Int(constraint.iColumn)
+            let isUsable = constraint.usable != 0
+            let operation = SQLight.Table.Index.Constraint.Operator.from(op: Int32(constraint.op))
+
+            var argument: SQLight.Value?
+            var pArgument: OpaquePointer? = nil
+            SQLite3.sqlite3_vtab_rhs_value(pIndexInfo, Int32(constraintIndex), &pArgument)
+            if let pArgument {
+                argument = SQLight.Value(from: pArgument)
+            }
+
+            constraints.append(.init(constraintIndex: constraintIndex, columnIndex: colIndex, isUsable: isUsable, operation: operation, argument: argument))
+        }
+    }
+
+    var orderByTerms = [SQLight.Table.Index.OrderByTerm]()
+    let termCount = Int(pIndexInfo.pointee.nOrderBy)
+    if termCount > 0 {
+        for termIndex in 0..<termCount {
+            let pTerm = pIndexInfo.pointee.aOrderBy[termIndex]
+            orderByTerms.append(.init(columnIndex: Int(pTerm.iColumn), isDescending: pTerm.desc != 0))
+        }
+    }
+
+    let info = SQLight.Table.Index.Info(constraints: constraints,
+                                        orderByTerms: orderByTerms,
+                                        colUsedBits: pIndexInfo.pointee.colUsed)
+
+    switch table.bestIndexCaching(info: info) {
+    case .none: return SQLite3.SQLITE_CONSTRAINT // no solution
+    case .index(let index):
+        if index.orderByConsumed {
+            pIndexInfo.pointee.orderByConsumed = 1
+        }
+        if let rowCount = index.estimatedRows {
+            pIndexInfo.pointee.estimatedRows = Int64(rowCount)
+        }
+        if index.zeroOrOneRow {
+            pIndexInfo.pointee.idxFlags = SQLite3.SQLITE_INDEX_SCAN_UNIQUE
+        }
+        pIndexInfo.pointee.estimatedCost = index.estimatedCost
+
+        // set usage order for those constraints used in the index
+        if let pConstraintUsage = pIndexInfo.pointee.aConstraintUsage {
+            for (constraintIndex, constraint) in index.constraints.enumerated() {
+                pConstraintUsage[constraint.constraintIndex].argvIndex = Int32(constraintIndex + 1)
+            }
+        }
+
+        return SQLite3.SQLITE_OK
+    }
 }
 
 fileprivate func xDisconnect(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
@@ -297,7 +349,27 @@ fileprivate func xClose(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?) -
 }
 
 fileprivate func xFilter(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, _ indexNum: Int32, _ indexString: UnsafePointer<CChar>?, _ argCount: Int32, _ ppArgs: UnsafeMutablePointer<OpaquePointer?>?) -> Int32 {
-    // TODO
+    guard let cursor = cursor(from: pCursor), 
+          let table = cursor.table,
+          let index = table.getIndex(at: Int(indexNum))
+    else { return SQLite3.SQLITE_ERROR }
+
+    var args = [SQLight.Value]()
+
+    // gather constraint args
+    if let ppArgs, argCount == index.constraints.count {
+        for argIndex in 0..<Int(argCount) {
+            let value = SQLight.Value(from: ppArgs[argIndex])
+            args.append(value)
+        }
+    } else {
+        if index.constraints.count > 0 {
+            SQLight.logger.debug("xFilter args do not match constraints in index")
+            return SQLite3.SQLITE_ERROR
+        }
+    }
+
+    cursor.filter(index: index, arguments: args)
     return SQLite3.SQLITE_OK
 }
 
