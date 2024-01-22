@@ -10,6 +10,13 @@ public extension SQLight.Table {
     /// This is returned from the ``Table/bestIndex(info:)`` method to inform SQLight of the cost and
     /// constraint usage determined by the virtual table, given the input constraints.
     ///
+    /// One of the instances of this class will be passed to ``Cursor/filter(index:arguments:)`` before any
+    /// results are accessed.
+    ///
+    /// Note that SQLite will generate bytecode to validate all constraints, so using them to filter results
+    /// in the virtual table implementation is not strictly necessary. If optimization is not
+    /// needed then a single Index, without any custom constraint processing, could be used for all queries.
+    ///
     struct Index: Hashable {
 
         /// The input constraints that resulted in this index instance.
@@ -25,6 +32,10 @@ public extension SQLight.Table {
         /// Constraints such as ``SQLight/Table/Index/Constraint/Operator/isNotNull`` that do not require an argument can be
         /// included in this array and the corresponding value passed to ``Cursor/filter(index:arguments:)`` will be
         /// ``SQLight/Value/null``.
+        ///
+        /// If the virtual table does choose to perform filtering of results before passing them
+        /// back to SQLite then the ``SQLight/Table/Index/Constraint/omitConstraint`` property can be
+        /// set to true to suggest that SQLite can omit generating the validation bytecode.
         ///
         public let constraints: [Constraint]
 
@@ -49,6 +60,9 @@ public extension SQLight.Table {
         public let zeroOrOneRow: Bool
 
         /// See the properties for descriptions of each corresponding argument.
+        ///
+        /// The default for ``estimatedCost`` is 1000 for no particular reason.
+        ///
         public init(info: Info, constraints: [Constraint] = [], orderByConsumed: Bool = false, estimatedCost: Double = 1000, estimatedRows: Int? = nil, zeroOrOneRow: Bool = false) {
             self.info = info
             self.constraints = constraints
@@ -108,8 +122,27 @@ public extension SQLight.Table.Index {
         /// The index of this constraint
         public let constraintIndex: Int
 
+        /// Whether SQLite should omit generating bytecode to check this constraint because the virtual
+        /// table will guarantee it. This is an optimization suggestion that SQLite may ignore.
+        ///
+        /// This can be set to true when passing the constraint back to SQLite in the ``SQLight/Table/Index/constraints``
+        /// constraint-usage array.
+        ///
+        /// The ``Operator/limit`` and ``Operator/offset``
+        /// constraint operations apply to the whole query and not to individual rows.
+        /// If the virtual table chooses to implement them before passing results back then the
+        /// ``SQLight/Table/Index/Constraint/omitConstraint`` flag must be set to true to avoid having those
+        /// constraints applied again by SQLite.
+        ///
+        /// See ["2.3.2.1. Omit constraint checking in bytecode"](https://www.sqlite.org/vtab.html#omit_constraint_checking_in_bytecode) for detailed discussion.
+        ///
+        public var omitConstraint = false
+
         /// The zero-based index of the column the constraint applies to.
         /// A constraint on the row id has an index of -1.
+        ///
+        /// Note that constraint operators "limit" and "offset" do not have a left-hand-side value and this column
+        /// index is meaningless.
         public let columnIndex: Int
 
         /// Whether the constraint is usable.
@@ -147,11 +180,11 @@ public extension SQLight.Table.Index {
             case regex
             case notEqual
             case isNot
-            case isNotNull
-            case isNull
+            case isNotNull // no rhs
+            case isNull    // no rhs
             case is_
-            case limit
-            case offset
+            case limit     // no lhs
+            case offset    // no lhs
             case function
         }
     }

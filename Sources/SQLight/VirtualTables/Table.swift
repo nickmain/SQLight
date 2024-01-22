@@ -8,7 +8,8 @@ public extension SQLight {
     /// Base class for virtual table implementations
     ///
     /// Note that the ``SQLight/Module`` will keep a strong reference to any instances created in response
-    /// to SQLight create or connect requests in order to ensure that the [sqlite3_vtab](https://www.sqlite.org/c3ref/vtab.html) passed to SQLight remains allocated.
+    /// to SQLight create or connect requests in order to ensure that the 
+    /// [sqlite3_vtab](https://www.sqlite.org/c3ref/vtab.html) passed to SQLight remains allocated.
     /// Make sure that there are no strong references from Tables back to Modules.
     ///
     class Table {
@@ -44,10 +45,11 @@ public extension SQLight {
         /// The SQL create-table statement that will be used when defining the table.
         ///
         /// The default implementation uses the additional arguments verbatim as the column definitions.
+        /// The table is defined as "WITHOUT ROWID" so there must be one column (only) declared as the primary key.
         ///
         /// See ["Declare The Schema Of A Virtual Table"](https://www.sqlite.org/c3ref/declare_vtab.html)
         open var declarationSql: String {
-            "CREATE TABLE \(schema).\(name) ( \(arguments.joined(separator: ", ")) )"
+            "CREATE TABLE \(schema).\(name) ( \(arguments.joined(separator: ", ")) ) WITHOUT ROWID"
         }
 
         /// Determine an index for a query, given a set of input constraints.
@@ -121,9 +123,50 @@ public extension SQLight {
             }
         }
 
-        /// Override to handle opening a new cursor.
+        /// Override to handle opening a new query cursor.
         open func openCursor() -> Cursor {
             return Cursor(table: self)
+        }
+
+        /// Override to handle a SQL INSERT operation for a single row.
+        ///
+        /// - Parameter values: the new column values in declaration order.
+        ///
+        /// - Returns: the id of the new row. If the table was declared as "WITHOUT ROWID" then
+        ///            return nil and the primary key column will be used for other operations.
+        ///
+        /// - Throws: ``SQLight/Error`` with an appropriate SQLite code or message.
+        ///
+        open func insert(values: [Value]) throws -> Int? {
+            SQLight.logger.debug("Default Table insert method called - please override")
+            return nil
+        }
+
+        /// Override to handle a SQL UPDATE operation for a single row.
+        ///
+        /// - Parameters:
+        ///   - key: the id of the row to update or the primary key for a "WITHOUT ROWID" table.
+        ///   - newKey: if present, the new id or primary key for the row (for example, where a statement
+        ///             such as "UPDATE table SET rowid=rowid+1 WHERE .." is used)
+        ///   - values: the existing or updated values for the row
+        ///
+        /// - Throws: ``SQLight/Error`` with an appropriate SQLite code or message.
+        ///
+        open func update(key: Value, newKey: Value? = nil, values: [Value]) throws {
+            SQLight.logger.debug("Default Table update method called - please override")
+            return
+        }
+
+        /// Override to handle a SQL DELETE operation for a single row.
+        ///
+        /// - Parameters:
+        ///   - key: the id of the row to delete, or the primary key for a "WITHOUT ROWID" table.
+        ///
+        /// - Throws: ``SQLight/Error`` with an appropriate SQLite code or message.
+        ///
+        open func delete(key: Value) throws {
+            SQLight.logger.debug("Default Table delete method called - please override")
+            return
         }
 
         /// Override to handle a disconnect from SQLite.

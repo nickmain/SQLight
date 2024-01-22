@@ -238,8 +238,8 @@ public extension SQLight.Value {
         case .isNotNull: !self.isNull
         case .isNull: self.isNull
         case .is_:  false // TODO:
-        case .limit: false // TODO:
-        case .offset: false // TODO:
+        case .limit: false   // Does not have a LHS
+        case .offset: false  // Does not have a LHS
         case .function: false // TODO:
         }
     }

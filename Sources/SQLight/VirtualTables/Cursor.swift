@@ -60,6 +60,9 @@ public extension SQLight {
         open var hasCurrentRow: Bool { false }
 
         /// Get the row id of the current result row. Override in the subclass.
+        ///
+        /// If the virtual table is declared as "WITHOUT ROWID" then this will not be called and the
+        /// primary key will be used for the delete/insert/update operations.
         open var currentRowId: Int { 0 }
 
         /// Override to return column values for the current result row.
@@ -72,7 +75,23 @@ public extension SQLight {
         }
 
         /// Call from SQLite to set the query filter before fetching any results.
+        /// 
+        /// See ["2.9. The xFilter Method"](https://www.sqlite.org/vtab.html#the_xfilter_method) for details.
+        ///
         /// This default implementation sets the ``filter-swift.property`` property.
+        ///
+        /// Note that SQLite will generate bytecode to validate all constraints on results returned
+        /// by the virtual table, so using this filter is not strictly necessary.
+        ///
+        /// If the virtual table does choose to perform filtering of results before passing them
+        /// back to SQLite then the ``SQLight/Table/Index/Constraint/omitConstraint`` property can be
+        /// set to true to suggest that SQLite can omit generating the validation bytecode.
+        ///
+        /// The ``Table/Index/Constraint/Operator/limit`` and ``Table/Index/Constraint/Operator/offset``
+        /// constraint operations apply to the whole query and not to individual rows.
+        /// If the virtual table chooses to implement them before passing results back then the
+        /// ``SQLight/Table/Index/Constraint/omitConstraint`` flag must be set to true to avoid having those
+        /// constraints applied again by SQLite.
         open func filter(index: Table.Index, arguments: [SQLight.Value]) {
             filter = Filter(index: index, arguments: arguments)
         }
@@ -87,7 +106,7 @@ public extension SQLight.Cursor.Filter {
     func allows(row: [SQLight.Value]) -> Bool {
         for (index, constraint) in self.index.constraints.enumerated() {
             let rhs = self.arguments[index]
-            let lhs = row[index]
+            let lhs = row[constraint.columnIndex]
 
             // return false if any constraint fails
             if !lhs.testConstraint(op: constraint.operation, arg: rhs) {

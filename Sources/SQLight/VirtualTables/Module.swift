@@ -311,6 +311,10 @@ fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pInd
         if let pConstraintUsage = pIndexInfo.pointee.aConstraintUsage {
             for (constraintIndex, constraint) in index.constraints.enumerated() {
                 pConstraintUsage[constraint.constraintIndex].argvIndex = Int32(constraintIndex + 1)
+
+                if constraint.omitConstraint {
+                    pConstraintUsage[constraint.constraintIndex].omit = 1
+                }
             }
         }
 
@@ -401,8 +405,79 @@ fileprivate func xRowid(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, _
 }
 
 fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCount: Int32, _ ppArgs:     UnsafeMutablePointer<OpaquePointer?>?, _ pRowId: UnsafeMutablePointer<sqlite3_int64>?) -> Int32 {
-    // TODO
-    return SQLite3.SQLITE_OK
+    guard let pVTab, let table = table(from: pVTab), let ppArgs, argCount > 0 else { return SQLite3.SQLITE_ERROR }
+
+    // maybe set an error message in the pVTab and return the code
+    func tableError(error: SQLight.Error? = nil, msg: String? = nil, pVTab: UnsafeMutablePointer<sqlite3_vtab>) -> Int32 {
+        if let error {
+            switch error {
+            case .result(let code):
+                return code.asSQLiteCode
+            case .message(let msg):
+                pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
+                return SQLite3.SQLITE_ERROR
+            case .resultMessage(let code, let msg):
+                pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
+                return code.asSQLiteCode
+            }
+        } else if let msg {
+            pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
+        }
+        return SQLite3.SQLITE_ERROR
+    }
+
+    let oldRowId = SQLight.Value.init(from: ppArgs[0])
+
+    if argCount == 1 { // DELETE
+        do {
+            try table.delete(key: oldRowId)
+            return SQLite3.SQLITE_OK
+        } catch let error as SQLight.Error {
+            return tableError(error: error, pVTab: pVTab)
+        } catch {
+            return tableError(msg: "Error in vtable delete: \(error)", pVTab: pVTab)
+        }
+    }
+
+    let newRowId = SQLight.Value.init(from: ppArgs[1])
+    var colValues = [SQLight.Value]()
+    for idx in 2..<Int(argCount) {
+        colValues.append(SQLight.Value.init(from: ppArgs[idx]))
+    }
+
+    if oldRowId == .null { // INSERT
+        do {
+            if let rowId = try table.insert(values: colValues) {
+                pRowId?.pointee = Int64(rowId) // return the new row id
+            }
+            return SQLite3.SQLITE_OK
+        } catch let error as SQLight.Error {
+            return tableError(error: error, pVTab: pVTab)
+        } catch {
+            return tableError(msg: "Error in vtable insert: \(error)", pVTab: pVTab)
+        }
+    }
+
+    if newRowId == oldRowId { // UPDATE
+        do {
+            try table.update(key: oldRowId, values: colValues)
+            return SQLite3.SQLITE_OK
+        } catch let error as SQLight.Error {
+            return tableError(error: error, pVTab: pVTab)
+        } catch {
+            return tableError(msg: "Error in vtable update: \(error)", pVTab: pVTab)
+        }
+    }
+
+    // otherwise an UPDATE with rowid or PRIMARY KEY change
+    do {
+        try table.update(key: oldRowId, newKey: newRowId, values: colValues)
+        return SQLite3.SQLITE_OK
+    } catch let error as SQLight.Error {
+        return tableError(error: error, pVTab: pVTab)
+    } catch {
+        return tableError(msg: "Error in vtable update: \(error)", pVTab: pVTab)
+    }
 }
 
 fileprivate func xBegin(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {

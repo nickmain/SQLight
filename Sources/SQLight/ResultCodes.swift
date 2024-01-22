@@ -19,6 +19,15 @@ public extension SQLight {
             case .resultMessage(let code, let msg): "SQLite error: \(code.description) - \(msg)"
             }
         }
+
+        /// Get the underlying SQLite error code (or SQLite3.SQLITE_ERROR if none)
+        public var sqliteCode: Int32 {
+            switch self {
+            case .result(let code): code.asSQLiteCode
+            case .message(_): SQLite3.SQLITE_ERROR
+            case .resultMessage(let code, _): code.asSQLiteCode
+            }
+        }
     }
 
     /// The common SQLite result codes
@@ -28,6 +37,43 @@ public extension SQLight {
              ioerr, corrupt, notfound, full, cantopen, protocol_, empty, schema, toobig,
              constraint, mismatch, misuse, nolfs, auth, format, range, notadb, notice,
              warning, row, done
+
+        public var asSQLiteCode: Int32 {
+            switch self {
+            case .ok        : SQLite3.SQLITE_OK
+            case .error     : SQLite3.SQLITE_ERROR
+            case .internal_ : SQLite3.SQLITE_INTERNAL
+            case .perm      : SQLite3.SQLITE_PERM
+            case .abort     : SQLite3.SQLITE_ABORT
+            case .busy      : SQLite3.SQLITE_BUSY
+            case .locked    : SQLite3.SQLITE_LOCKED
+            case .nomem     : SQLite3.SQLITE_NOMEM
+            case .readonly  : SQLite3.SQLITE_READONLY
+            case .interrupt : SQLite3.SQLITE_INTERRUPT
+            case .ioerr     : SQLite3.SQLITE_IOERR
+            case .corrupt   : SQLite3.SQLITE_CORRUPT
+            case .notfound  : SQLite3.SQLITE_NOTFOUND
+            case .full      : SQLite3.SQLITE_FULL
+            case .cantopen  : SQLite3.SQLITE_CANTOPEN
+            case .protocol_ : SQLite3.SQLITE_PROTOCOL
+            case .empty     : SQLite3.SQLITE_EMPTY
+            case .schema    : SQLite3.SQLITE_SCHEMA
+            case .toobig    : SQLite3.SQLITE_TOOBIG
+            case .constraint: SQLite3.SQLITE_CONSTRAINT
+            case .mismatch  : SQLite3.SQLITE_MISMATCH
+            case .misuse    : SQLite3.SQLITE_MISUSE
+            case .nolfs     : SQLite3.SQLITE_NOLFS
+            case .auth      : SQLite3.SQLITE_AUTH
+            case .format    : SQLite3.SQLITE_FORMAT
+            case .range     : SQLite3.SQLITE_RANGE
+            case .notadb    : SQLite3.SQLITE_NOTADB
+            case .notice    : SQLite3.SQLITE_NOTICE
+            case .warning   : SQLite3.SQLITE_WARNING
+            case .row       : SQLite3.SQLITE_ROW
+            case .done      : SQLite3.SQLITE_DONE
+            case .other(let code): code
+            }
+        }
 
         public static func fromSQLite(code: Int32) -> ResultCode {
             switch code {
