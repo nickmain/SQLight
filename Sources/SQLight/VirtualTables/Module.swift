@@ -144,7 +144,7 @@ fileprivate var sqlite3Module: SQLite3.sqlite3_module = .init(
     xRelease:    nil, // xRelease(_:_:),
     xRollbackTo: nil, // xRollbackTo(_:_:),
 
-    xShadowName: xShadowName(_:)
+    xShadowName: nil  // xShadowName(_:)
 )
 
 // Set an error message in the given ptr and return SQLITE_ERROR
