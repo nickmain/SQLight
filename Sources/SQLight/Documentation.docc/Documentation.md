@@ -6,6 +6,9 @@ A minimal wrapper for using SQLite from Swift.
 
 Use the methods of ``SQLight/Connection`` to start using this library.
 
+To create virtual tables, create a ``SQLight/Module`` and register it with 
+a connection using ``SQLight/Connection/register(module:)``.
+
 The original source repository is at [https://github.com/nickmain/SQLight](https://github.com/nickmain/SQLight)
 
 This library deliberately avoids concurrency concerns. SQLite itself will serialize requests
