@@ -109,8 +109,19 @@ final class VirtualTableTests: XCTestCase {
     }
 
     class TestModule: SQLight.Module {
+        static var connectCalled = false
+        static var createCalled = false
+
         override func createTable(name: String, schema: String, args: [String]) throws -> SQLight.Table {
-            TestTable(name: name, schema: schema, arguments: args)
+            Self.createCalled = true
+            print("♦️ \(name): Create Table")
+            return TestTable(name: name, schema: schema, arguments: args)
+        }
+
+        override func connectToTable(name: String, schema: String, args: [String]) throws -> SQLight.Table {
+            Self.connectCalled = true
+            print("♦️ \(name): Connect Table")
+            return TestTable(name: name, schema: schema, arguments: args)
         }
     }
 
@@ -124,6 +135,9 @@ final class VirtualTableTests: XCTestCase {
             ["b": Optional("4.3"), "a": Optional("6"), "c": nil]
         ]
 
+        TestModule.connectCalled = false
+        TestModule.createCalled = false
+
         let module = TestModule(name: "TestTables")
         let db = try SQLight.Connection.createInMemoryDatabase()
         try db.register(module: module)
@@ -133,6 +147,9 @@ final class VirtualTableTests: XCTestCase {
             XCTAssertEqual(row, expected[num-1])
             return true
         }
+
+        XCTAssertFalse(TestModule.connectCalled)
+        XCTAssertTrue(TestModule.createCalled)
     }
 
     func testIndexFilterSanity() throws {
@@ -254,5 +271,46 @@ final class VirtualTableTests: XCTestCase {
         ]
 
         XCTAssertEqual(Self.updatedRows, expected)
+    }
+
+    func testConnect() throws {
+        // try createTestDatabase() <-- only when initially creating the test database
+
+        let module = TestModule(name: "TestTables")
+        let dbPath = try pathFor(sample: "testConnect")
+        let db = try SQLight.Connection.open(file: dbPath, option: .readOnly)
+        try db.register(module: module)
+
+        let expected = [
+            ["c": Optional("One"), "b": Optional("1.1"), "a": Optional("1")],
+            ["b": Optional("2.0"), "a": Optional("2"), "c": Optional("Two")],
+            ["b": Optional("3.3"), "a": Optional("3"), "c": Optional("Three")],
+            ["b": Optional("4.4"), "a": Optional("4"), "c": Optional("Four")],
+            ["b": Optional("5.5"), "a": Optional("5"), "c": Optional("Five")],
+            ["b": Optional("4.3"), "a": Optional("6"), "c": nil]
+        ]
+        
+        TestModule.connectCalled = false
+        TestModule.createCalled = false
+
+        // since the table already exists in the schema it will be connected not created
+        try db.execute(sql: "SELECT * FROM foobar") { num, row in
+            print("[\(num)]: \(row)")
+            XCTAssertEqual(row, expected[num-1])
+            return true
+        }
+
+        XCTAssertTrue(TestModule.connectCalled)
+        XCTAssertFalse(TestModule.createCalled)
+    }
+
+    func createTestDatabase() throws {
+        let module = TestModule(name: "TestTables")
+        let resourceDir = NSTemporaryDirectory()
+        let dbPath = resourceDir + "testConnect.sqlite3"
+        print(dbPath)
+        let db = try SQLight.Connection.open(file: dbPath, option: .create)
+        try db.register(module: module)
+        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER PRIMARY KEY, b REAL, c TEXT )")
     }
 }

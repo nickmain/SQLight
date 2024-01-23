@@ -40,6 +40,13 @@ public extension SQLight {
             self.name = dbName
         }
 
+        /// Perform an immediate flush to disk.
+        ///
+        /// See ["sqlite3_db_cacheflush"](https://www.sqlite.org/c3ref/db_cacheflush.html) for details.
+        public func flushCache() {
+            SQLite3.sqlite3_db_cacheflush(sqlite3ptr)
+        }
+
         /// Open or create a database with a file path.
         ///
         /// - Parameters:
