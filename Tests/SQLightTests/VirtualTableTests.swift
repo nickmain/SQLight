@@ -127,7 +127,7 @@ final class VirtualTableTests: XCTestCase {
         let module = TestModule(name: "TestTables")
         let db = try SQLight.Connection.createInMemoryDatabase()
         try db.register(module: module)
-        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER, b REAL, c TEXT )")
+        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER PRIMARY KEY, b REAL, c TEXT )")
         try db.execute(sql: "SELECT * FROM foobar") { num, row in
             print("[\(num)]: \(row)")
             XCTAssertEqual(row, expected[num-1])
@@ -144,7 +144,7 @@ final class VirtualTableTests: XCTestCase {
         let module = TestModule(name: "TestTables")
         let db = try SQLight.Connection.createInMemoryDatabase()
         try db.register(module: module)
-        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER, b REAL, c TEXT )")
+        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER PRIMARY KEY, b REAL, c TEXT )")
         try db.execute(sql: "SELECT * FROM foobar WHERE b > 2 and c NOT NULL AND b < 5") { num, row in
             print("[\(num)]: \(row)")
             XCTAssertEqual(row, expected[num-1])
