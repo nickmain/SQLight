@@ -15,3 +15,5 @@ This library deliberately avoids concurrency concerns. SQLite itself will serial
 made on a connection from different threads, so everything should be OK. However, this library
 assumes that it will be used by code that uses an actor or other such mechanism to manage
 concurrency.
+
+![](Example.svg)

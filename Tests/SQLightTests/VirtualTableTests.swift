@@ -3,10 +3,11 @@
 import XCTest
 @testable import SQLight
 
+@MainActor
 final class VirtualTableTests: XCTestCase {
 
-    static var insertedRows = [[SQLight.Value]]()
-    static var updatedRows = [[SQLight.Value]]()
+    nonisolated(unsafe) static var insertedRows = [[SQLight.Value]]()
+    nonisolated(unsafe) static var updatedRows = [[SQLight.Value]]()
 
     class TestCursor: SQLight.Cursor {
         var currRow = 0
@@ -66,8 +67,9 @@ final class VirtualTableTests: XCTestCase {
         }
     }
 
+    @MainActor
     class TestTable: SQLight.Table {
-        static var testRows: [[SQLight.Value]] = [
+        nonisolated(unsafe) static var testRows: [[SQLight.Value]] = [
             [.int(1), .double(1.1), .string("One")],
             [.int(2), .double(2.0), .string("Two")],
             [.int(3), .double(3.3), .string("Three")],
@@ -108,9 +110,10 @@ final class VirtualTableTests: XCTestCase {
         }
     }
 
+    @MainActor
     class TestModule: SQLight.Module {
-        static var connectCalled = false
-        static var createCalled = false
+        nonisolated(unsafe) static var connectCalled = false
+        nonisolated(unsafe) static var createCalled = false
 
         override func createTable(name: String, schema: String, args: [String]) throws -> SQLight.Table {
             Self.createCalled = true
@@ -150,6 +153,20 @@ final class VirtualTableTests: XCTestCase {
 
         XCTAssertFalse(TestModule.connectCalled)
         XCTAssertTrue(TestModule.createCalled)
+    }
+
+    func testFindFunctionSanity() throws {
+        // NOTE: SQLite does not appear to call xFindFunction for the "count()" function, so this is
+        // not currently useful
+//        let module = TestModule(name: "TestTables")
+//        let db = try SQLight.Connection.createInMemoryDatabase()
+//        try db.register(module: module)
+//        try db.execute(sql: "CREATE VIRTUAL TABLE foobar USING TestTables( a INTEGER PRIMARY KEY, b REAL, c TEXT )")
+//
+//        try db.execute(sql: "SELECT count(a) as count FROM foobar") { num, row in
+//            print("[\(num)]: \(row)")
+//            return true
+//        }
     }
 
     func testIndexFilterSanity() throws {

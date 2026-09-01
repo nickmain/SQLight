@@ -97,6 +97,48 @@ public extension SQLight {
             let module: Module = Unmanaged.fromOpaque(auxPtr).takeUnretainedValue()
             return module
         }
+
+        private var sqlite3Module: SQLite3.sqlite3_module = .init(
+            iVersion: 4,
+
+            // tables
+            xCreate:     xCreate(_:_:_:_:_:_:),
+            xConnect:    xConnect(_:_:_:_:_:_:),
+            xBestIndex:  xBestIndex(_:_:),
+            xDisconnect: xDisconnect(_:),
+            xDestroy:    xDestroy(_:),
+
+            // cursors
+            xOpen:   xOpen(_:_:),
+            xClose:  xClose(_:),
+            xFilter: xFilter(_:_:_:_:_:),
+            xNext:   xNext(_:),
+            xEof:    xEof(_:),
+            xColumn: xColumn(_:_:_:),
+            xRowid:  xRowid(_:_:),
+
+            // inserts/deletes/updates
+            xUpdate: xUpdate(_:_:_:_:),
+
+            // transaction support not yet implemented
+            xBegin:    nil, // xBegin(_:),
+            xSync:     nil, // xSync(_:),
+            xCommit:   nil, // xCommit(_:),
+            xRollback: nil, // xRollback(_:),
+
+            xFindFunction: xFindFunction(_:_:_:_:_:),
+
+            // table renaming not supported
+            xRename: nil, // xRename(_:_:),
+
+            // savepoints not yet implemented
+            xSavepoint:  nil, // xSavepoint(_:_:),
+            xRelease:    nil, // xRelease(_:_:),
+            xRollbackTo: nil, // xRollbackTo(_:_:),
+
+            xShadowName: nil, // xShadowName(_:)
+            xIntegrity: nil
+        )
     }
 
     /// Allocate an error message that SQLite will later free using sqlite3_free()
@@ -104,48 +146,6 @@ public extension SQLight {
         withVaList([]) { SQLite3.sqlite3_vmprintf(errorMsg, $0) }
     }
 }
-
-// common module definition struct
-fileprivate var sqlite3Module: SQLite3.sqlite3_module = .init(
-    iVersion: 3,
-
-    // tables
-    xCreate:     xCreate(_:_:_:_:_:_:),
-    xConnect:    xConnect(_:_:_:_:_:_:),
-    xBestIndex:  xBestIndex(_:_:),
-    xDisconnect: xDisconnect(_:),
-    xDestroy:    xDestroy(_:),
-
-    // cursors
-    xOpen:   xOpen(_:_:),
-    xClose:  xClose(_:),
-    xFilter: xFilter(_:_:_:_:_:),
-    xNext:   xNext(_:),
-    xEof:    xEof(_:),
-    xColumn: xColumn(_:_:_:),
-    xRowid:  xRowid(_:_:),
-
-    // inserts/deletes/updates
-    xUpdate: xUpdate(_:_:_:_:),
-
-    // transaction support not yet implemented
-    xBegin:    nil, // xBegin(_:),
-    xSync:     nil, // xSync(_:),
-    xCommit:   nil, // xCommit(_:),
-    xRollback: nil, // xRollback(_:),
-
-    xFindFunction: nil, // not implemented
-
-    // table renaming not supported
-    xRename: nil, // xRename(_:_:),
-
-    // savepoints not yet implemented
-    xSavepoint:  nil, // xSavepoint(_:_:),
-    xRelease:    nil, // xRelease(_:_:),
-    xRollbackTo: nil, // xRollbackTo(_:_:),
-
-    xShadowName: nil  // xShadowName(_:)
-)
 
 // Set an error message in the given ptr and return SQLITE_ERROR
 fileprivate func setError(message: String, in pzErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?) -> Int32 {
@@ -523,4 +523,14 @@ fileprivate func xRollbackTo(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ sav
 fileprivate func xShadowName(_ name: UnsafePointer<CChar>?) -> Int32 {
     // TODO
     return 0 // false
+}
+
+fileprivate func xFindFunction(_ pVtab: UnsafeMutablePointer<SQLite3.sqlite3_vtab>?,
+                               _ nArg: Int32,
+                               _ zName: UnsafePointer<CChar>?,
+                               _ pxFunc: UnsafeMutablePointer<(@convention(c) (OpaquePointer?, Int32, UnsafeMutablePointer<OpaquePointer?>?) -> Void)?>?,
+                               _ ppArg: UnsafeMutablePointer<UnsafeMutableRawPointer?>?) -> Int32 {
+
+    // TODO
+    return 0
 }
