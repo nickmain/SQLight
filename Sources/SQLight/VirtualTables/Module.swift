@@ -108,7 +108,7 @@ public extension SQLight {
             p.pointee.iVersion = 3
 
             // tables
-            p.pointee.xCreate     = isTableValuedFunction ? nil : xCreate(_:_:_:_:_:_:)
+            p.pointee.xCreate     = !isTableValuedFunction ? xCreate(_:_:_:_:_:_:) : nil
             p.pointee.xConnect    = xConnect(_:_:_:_:_:_:)
             p.pointee.xBestIndex  = xBestIndex(_:_:)
             p.pointee.xDisconnect = xDisconnect(_:)
