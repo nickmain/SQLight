@@ -26,12 +26,16 @@ public extension SQLight {
     ///
     /// Use ``Connection/register(module:)`` to add a module to a database connection.
     class Module {
-        
+        private let pSqlite3Module = StructPointer<sqlite3_module>()
+        private let isTableValuedFunction: Bool
+
         /// The name of the module
         public let name: String
 
-        public init(name: String) {
+        public init(name: String, isTableValuedFunction: Bool = false) {
             self.name = name
+            self.isTableValuedFunction = isTableValuedFunction
+            setUpSqlite3Module()
         }
 
         // Strong references to tables to avoid premature deinitialization since the table
@@ -85,7 +89,7 @@ public extension SQLight {
             // ptr to pass unmanaged weak reference to module registration
             let selfPtr = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
 
-            let rc = SQLite3.sqlite3_create_module(connectionPtr, name, &sqlite3Module, selfPtr)
+            let rc = SQLite3.sqlite3_create_module(connectionPtr, name, pSqlite3Module.pointer, selfPtr)
             guard rc == SQLite3.SQLITE_OK else {
                 throw Error.result(.fromSQLite(code: rc))
             }
@@ -98,47 +102,49 @@ public extension SQLight {
             return module
         }
 
-        private var sqlite3Module: SQLite3.sqlite3_module = .init(
-            iVersion: 4,
+        private func setUpSqlite3Module() {
+            let p = pSqlite3Module.pointer
+
+            p.pointee.iVersion = 3
 
             // tables
-            xCreate:     xCreate(_:_:_:_:_:_:),
-            xConnect:    xConnect(_:_:_:_:_:_:),
-            xBestIndex:  xBestIndex(_:_:),
-            xDisconnect: xDisconnect(_:),
-            xDestroy:    xDestroy(_:),
+            p.pointee.xCreate     = isTableValuedFunction ? nil : xCreate(_:_:_:_:_:_:)
+            p.pointee.xConnect    = xConnect(_:_:_:_:_:_:)
+            p.pointee.xBestIndex  = xBestIndex(_:_:)
+            p.pointee.xDisconnect = xDisconnect(_:)
+            p.pointee.xDestroy    = xDestroy(_:)
 
             // cursors
-            xOpen:   xOpen(_:_:),
-            xClose:  xClose(_:),
-            xFilter: xFilter(_:_:_:_:_:),
-            xNext:   xNext(_:),
-            xEof:    xEof(_:),
-            xColumn: xColumn(_:_:_:),
-            xRowid:  xRowid(_:_:),
+            p.pointee.xOpen   = xOpen(_:_:)
+            p.pointee.xClose  = xClose(_:)
+            p.pointee.xFilter = xFilter(_:_:_:_:_:)
+            p.pointee.xNext   = xNext(_:)
+            p.pointee.xEof    = xEof(_:)
+            p.pointee.xColumn = xColumn(_:_:_:)
+            p.pointee.xRowid  = xRowid(_:_:)
 
             // inserts/deletes/updates
-            xUpdate: xUpdate(_:_:_:_:),
+            p.pointee.xUpdate = xUpdate(_:_:_:_:)
 
             // transaction support not yet implemented
-            xBegin:    nil, // xBegin(_:),
-            xSync:     nil, // xSync(_:),
-            xCommit:   nil, // xCommit(_:),
-            xRollback: nil, // xRollback(_:),
+            p.pointee.xBegin    = nil // xBegin(_:)
+            p.pointee.xSync     = nil // xSync(_:)
+            p.pointee.xCommit   = nil // xCommit(_:)
+            p.pointee.xRollback = nil // xRollback(_:)
 
-            xFindFunction: xFindFunction(_:_:_:_:_:),
+            p.pointee.xFindFunction = xFindFunction(_:_:_:_:_:)
 
             // table renaming not supported
-            xRename: nil, // xRename(_:_:),
+            p.pointee.xRename = nil // xRename(_:_:)
 
             // savepoints not yet implemented
-            xSavepoint:  nil, // xSavepoint(_:_:),
-            xRelease:    nil, // xRelease(_:_:),
-            xRollbackTo: nil, // xRollbackTo(_:_:),
+            p.pointee.xSavepoint  = nil // xSavepoint(_:_:)
+            p.pointee.xRelease    = nil // xRelease(_:_:)
+            p.pointee.xRollbackTo = nil // xRollbackTo(_:_:)
 
-            xShadowName: nil, // xShadowName(_:)
-            xIntegrity: nil
-        )
+            p.pointee.xShadowName = nil // xShadowName(_:)
+            p.pointee.xIntegrity  = nil
+        }
     }
 
     /// Allocate an error message that SQLite will later free using sqlite3_free()

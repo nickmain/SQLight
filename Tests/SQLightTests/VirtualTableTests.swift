@@ -129,7 +129,7 @@ final class VirtualTableTests: XCTestCase {
     }
 
     func testSanity() throws {
-        let expected = [
+        let expected: [[String: String?]] = [
             ["c": Optional("One"), "b": Optional("1.1"), "a": Optional("1")],
             ["b": Optional("2.0"), "a": Optional("2"), "c": Optional("Two")],
             ["b": Optional("3.3"), "a": Optional("3"), "c": Optional("Three")],
@@ -298,7 +298,7 @@ final class VirtualTableTests: XCTestCase {
         let db = try SQLight.Connection.open(file: dbPath, option: .readOnly)
         try db.register(module: module)
 
-        let expected = [
+        let expected: [[String: String?]]  = [
             ["c": Optional("One"), "b": Optional("1.1"), "a": Optional("1")],
             ["b": Optional("2.0"), "a": Optional("2"), "c": Optional("Two")],
             ["b": Optional("3.3"), "a": Optional("3"), "c": Optional("Three")],

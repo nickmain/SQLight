@@ -14,17 +14,25 @@ let package = Package(
         .library(
             name: "SQLParser",
             targets: ["SQLParser"]),
+        .library(
+            name: "SQLiteCore",
+            targets: ["SQLiteCore"]),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "SQLight",
-            dependencies: ["SQLParser"]),
+            dependencies: ["SQLParser", "SQLiteCore"]),
         .testTarget(
             name: "SQLightTests",
             dependencies: ["SQLight"],
             resources: [.copy("Resources/databases")]),
+        .target(name: "SQLiteCore",
+                sources: ["src"],
+                cSettings: [
+                    .headerSearchPath("include")
+                ]),
 
         .target(
             name: "SQLParser"),
