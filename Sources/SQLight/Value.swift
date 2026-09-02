@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -52,15 +52,15 @@ public extension SQLight {
                 return
             }
 
-            let typeCode = SQLite3.sqlite3_value_type(ptr)
+            let typeCode = sqlite3_value_type(ptr)
             let type = ValueType(rawValue: Int(typeCode)) ?? .null
 
             switch type {
-            case .int:    self = .int(Int(SQLite3.sqlite3_value_int64(ptr)))
-            case .double: self = .double(SQLite3.sqlite3_value_double(ptr))
+            case .int:    self = .int(Int(sqlite3_value_int64(ptr)))
+            case .double: self = .double(sqlite3_value_double(ptr))
             case .null:   self = .null
             case .string:
-                if let bytePtr = SQLite3.sqlite3_value_text(ptr) {
+                if let bytePtr = sqlite3_value_text(ptr) {
                     let charPtr: UnsafePointer<CChar> = .init(OpaquePointer(bytePtr))
                     if let s = String(cString: charPtr, encoding: .utf8) {
                         self = .string(s)
@@ -71,8 +71,8 @@ public extension SQLight {
                     self = .null
                 }
             case .data:
-                if let bytePtr = SQLite3.sqlite3_value_blob(ptr) {
-                    let size = SQLite3.sqlite3_value_bytes(ptr)
+                if let bytePtr = sqlite3_value_blob(ptr) {
+                    let size = sqlite3_value_bytes(ptr)
                     self = .data(Data(bytes: bytePtr, count: Int(size)))
                 } else {
                     self = .null

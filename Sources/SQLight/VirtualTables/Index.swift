@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight.Table {
 
@@ -193,23 +193,23 @@ public extension SQLight.Table.Index {
 extension SQLight.Table.Index.Constraint.Operator {
     static func from(op: Int32) -> Self {
         switch op {
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_EQ:        .equal
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_GT:        .greaterThan
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_LE:        .lessOrEqual
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_LT:        .lessThan
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_GE:        .greaterOrEqual
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_MATCH:     .match
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_LIKE:      .like
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_GLOB:      .glob
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_REGEXP:    .regex
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_NE:        .notEqual
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_ISNOT:     .isNot
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_ISNOTNULL: .isNotNull
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_ISNULL:    .isNull
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_IS:        .is_
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_LIMIT:     .limit
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_OFFSET:    .offset
-        case SQLite3.SQLITE_INDEX_CONSTRAINT_FUNCTION:  .function
+        case SQLITE_INDEX_CONSTRAINT_EQ:        .equal
+        case SQLITE_INDEX_CONSTRAINT_GT:        .greaterThan
+        case SQLITE_INDEX_CONSTRAINT_LE:        .lessOrEqual
+        case SQLITE_INDEX_CONSTRAINT_LT:        .lessThan
+        case SQLITE_INDEX_CONSTRAINT_GE:        .greaterOrEqual
+        case SQLITE_INDEX_CONSTRAINT_MATCH:     .match
+        case SQLITE_INDEX_CONSTRAINT_LIKE:      .like
+        case SQLITE_INDEX_CONSTRAINT_GLOB:      .glob
+        case SQLITE_INDEX_CONSTRAINT_REGEXP:    .regex
+        case SQLITE_INDEX_CONSTRAINT_NE:        .notEqual
+        case SQLITE_INDEX_CONSTRAINT_ISNOT:     .isNot
+        case SQLITE_INDEX_CONSTRAINT_ISNOTNULL: .isNotNull
+        case SQLITE_INDEX_CONSTRAINT_ISNULL:    .isNull
+        case SQLITE_INDEX_CONSTRAINT_IS:        .is_
+        case SQLITE_INDEX_CONSTRAINT_LIMIT:     .limit
+        case SQLITE_INDEX_CONSTRAINT_OFFSET:    .offset
+        case SQLITE_INDEX_CONSTRAINT_FUNCTION:  .function
         default: .unknown
         }
     }

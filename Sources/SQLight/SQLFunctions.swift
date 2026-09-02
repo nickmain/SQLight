@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -62,16 +62,16 @@ public extension SQLight.Connection {
         // pass a retained ptr so that SQLite owns the wrapper
         let wrapperPtr = UnsafeMutableRawPointer(Unmanaged.passRetained(wrapper).toOpaque())
 
-        let rc = SQLite3.sqlite3_create_function_v2(self.sqlite3ptr,
+        let rc = sqlite3_create_function_v2(self.sqlite3ptr,
                                                     name,
                                                     argCount,
-                                                    SQLite3.SQLITE_UTF8,
+                                                    SQLITE_UTF8,
                                                     wrapperPtr,
                                                     scalarFunction(_:_:_:),
                                                     nil,
                                                     nil,
                                                     releaseWrapper(_:))
-        guard rc == SQLite3.SQLITE_OK else {
+        guard rc == SQLITE_OK else {
             throw SQLight.Error.result(.fromSQLite(code: rc))
         }
     }
@@ -96,16 +96,16 @@ public extension SQLight.Connection {
         // pass a retained ptr so that SQLite owns the wrapper
         let wrapperPtr = UnsafeMutableRawPointer(Unmanaged.passRetained(wrapper).toOpaque())
 
-        let rc = SQLite3.sqlite3_create_function_v2(self.sqlite3ptr,
+        let rc = sqlite3_create_function_v2(self.sqlite3ptr,
                                                     name,
                                                     argCount,
-                                                    SQLite3.SQLITE_UTF8,
+                                                    SQLITE_UTF8,
                                                     wrapperPtr,
                                                     nil,
                                                     aggregateStep(_:_:_:),
                                                     aggregateFinal(_:),
                                                     releaseWrapper(_:))
-        guard rc == SQLite3.SQLITE_OK else {
+        guard rc == SQLITE_OK else {
             throw SQLight.Error.result(.fromSQLite(code: rc))
         }
     }
@@ -156,7 +156,7 @@ fileprivate class AggregateFunctionWrapper {
 fileprivate func aggregateStep(_ context: OpaquePointer?, _ argCount: Int32, _ argsPtr: UnsafeMutablePointer<OpaquePointer?>?) {
     guard let context,
           // get or allocate space in the aggregate context for a pointer to an AggregateFunction instance
-          let aggContextPtr = SQLite3.sqlite3_aggregate_context(context, Int32(MemoryLayout<UnsafeMutableRawPointer>.size))
+          let aggContextPtr = sqlite3_aggregate_context(context, Int32(MemoryLayout<UnsafeMutableRawPointer>.size))
         else { return }
 
     // reinterpret as a pointer to a nullable pointer
@@ -168,7 +168,7 @@ fileprivate func aggregateStep(_ context: OpaquePointer?, _ argCount: Int32, _ a
         function = Unmanaged.fromOpaque(functionPtr).takeUnretainedValue()
     } else {
         // this is the first call to step - get the factory and create a function instance
-        guard let wrapperPtr = SQLite3.sqlite3_user_data(context) else { return }
+        guard let wrapperPtr = sqlite3_user_data(context) else { return }
         let wrapper: AggregateFunctionWrapper = Unmanaged.fromOpaque(wrapperPtr).takeUnretainedValue()
         function = wrapper.factory()
 
@@ -190,16 +190,16 @@ fileprivate func aggregateStep(_ context: OpaquePointer?, _ argCount: Int32, _ a
     do {
         try function.stepCall(args: args)
     } catch SQLight.Error.message(let errorMsg) {
-        SQLite3.sqlite3_result_error(context, errorMsg, -1)
+        sqlite3_result_error(context, errorMsg, -1)
     } catch {
-        SQLite3.sqlite3_result_error(context, error.localizedDescription, -1)
+        sqlite3_result_error(context, error.localizedDescription, -1)
     }
 }
 
 // Aggregate final function
 fileprivate func aggregateFinal(_ context: OpaquePointer?) {
     guard let context,
-          let aggContextPtr = SQLite3.sqlite3_aggregate_context(context, 0)
+          let aggContextPtr = sqlite3_aggregate_context(context, 0)
         else { return }
 
     // reinterpret as a pointer to a nullable pointer
@@ -218,8 +218,8 @@ fileprivate func aggregateFinal(_ context: OpaquePointer?) {
 fileprivate func scalarFunction(_ context: OpaquePointer?, _ argCount: Int32, _ argsPtr: UnsafeMutablePointer<OpaquePointer?>?) {
 
     guard let context,
-          // let dbPtr = SQLite3.sqlite3_context_db_handle(context),  <-- TODO: pass this to callback?
-          let wrapperPtr = SQLite3.sqlite3_user_data(context)
+          // let dbPtr = sqlite3_context_db_handle(context),  <-- TODO: pass this to callback?
+          let wrapperPtr = sqlite3_user_data(context)
     else { return }
 
     // get wrapper without taking ownership from SQLite
@@ -240,9 +240,9 @@ fileprivate func scalarFunction(_ context: OpaquePointer?, _ argCount: Int32, _ 
         let result = try wrapper.function(args) ?? .null
         result.setReturnValue(for: context)
     } catch SQLight.Error.message(let errorMsg) {
-        SQLite3.sqlite3_result_error(context, errorMsg, -1)
+        sqlite3_result_error(context, errorMsg, -1)
     } catch {
-        SQLite3.sqlite3_result_error(context, error.localizedDescription, -1)
+        sqlite3_result_error(context, error.localizedDescription, -1)
     }
 }
 
@@ -258,13 +258,13 @@ extension SQLight.Value {
 
     func setReturnValue(for sqlite3_context: OpaquePointer) {
         switch self {
-        case .null:              SQLite3.sqlite3_result_null(sqlite3_context)
-        case .int(let value):    SQLite3.sqlite3_result_int64(sqlite3_context, Int64(value))
-        case .double(let value): SQLite3.sqlite3_result_double(sqlite3_context, value)
-        case .string(let value): SQLite3.sqlite3_result_text(sqlite3_context, value, -1, Self.SQLITE_TRANSIENT)
+        case .null:              sqlite3_result_null(sqlite3_context)
+        case .int(let value):    sqlite3_result_int64(sqlite3_context, Int64(value))
+        case .double(let value): sqlite3_result_double(sqlite3_context, value)
+        case .string(let value): sqlite3_result_text(sqlite3_context, value, -1, Self.SQLITE_TRANSIENT)
         case .data(let value):
             value.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
-                SQLite3.sqlite3_result_blob(sqlite3_context, ptr.baseAddress, Int32(ptr.count), Self.SQLITE_TRANSIENT)
+                sqlite3_result_blob(sqlite3_context, ptr.baseAddress, Int32(ptr.count), Self.SQLITE_TRANSIENT)
             }
         }
     }

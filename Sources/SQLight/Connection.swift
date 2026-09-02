@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -44,7 +44,7 @@ public extension SQLight {
         ///
         /// See ["sqlite3_db_cacheflush"](https://www.sqlite.org/c3ref/db_cacheflush.html) for details.
         public func flushCache() {
-            SQLite3.sqlite3_db_cacheflush(sqlite3ptr)
+            sqlite3_db_cacheflush(sqlite3ptr)
         }
 
         /// Open or create a database with a file path.
@@ -60,12 +60,12 @@ public extension SQLight {
             let resultCode: Int32
 
             switch option {
-            case .readOnly:  resultCode = SQLite3.sqlite3_open_v2(path, &ptr, SQLite3.SQLITE_OPEN_READONLY, nil)
-            case .readWrite: resultCode = SQLite3.sqlite3_open_v2(path, &ptr, SQLite3.SQLITE_OPEN_READWRITE, nil)
-            case .create:    resultCode = SQLite3.sqlite3_open(path, &ptr)
+            case .readOnly:  resultCode = sqlite3_open_v2(path, &ptr, SQLITE_OPEN_READONLY, nil)
+            case .readWrite: resultCode = sqlite3_open_v2(path, &ptr, SQLITE_OPEN_READWRITE, nil)
+            case .create:    resultCode = sqlite3_open(path, &ptr)
             }
 
-            guard resultCode == SQLite3.SQLITE_OK else {
+            guard resultCode == SQLITE_OK else {
                 throw Error.result(.fromSQLite(code: resultCode))
             }
 
@@ -80,8 +80,8 @@ public extension SQLight {
         public static func createInMemoryDatabase() throws -> Connection {
             var ptr: OpaquePointer? = nil
 
-            let resultCode = SQLite3.sqlite3_open(Self.inMemoryDatabase, &ptr)
-            guard resultCode == SQLite3.SQLITE_OK else {
+            let resultCode = sqlite3_open(Self.inMemoryDatabase, &ptr)
+            guard resultCode == SQLITE_OK else {
                 throw Error.result(.fromSQLite(code: resultCode))
             }
 
@@ -95,7 +95,7 @@ public extension SQLight {
         deinit {
             let name = self.name
             SQLight.logger.debug("Closing database @ \(name, privacy: .public)")
-            SQLite3.sqlite3_close(sqlite3ptr)
+            sqlite3_close(sqlite3ptr)
         }
     }
 }

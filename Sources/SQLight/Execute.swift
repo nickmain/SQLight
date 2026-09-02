@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight.Connection {
 
@@ -25,16 +25,16 @@ public extension SQLight.Connection {
             context = UnsafeMutableRawPointer(Unmanaged.passUnretained(wrapper!).toOpaque())
         }
 
-        let rc = SQLite3.sqlite3_exec(self.sqlite3ptr,
+        let rc = sqlite3_exec(self.sqlite3ptr,
                                       sql,
                                       (callback != nil) ? execCallback : nil,
                                       context,
                                       &errorMessagePtr)
 
-        guard rc == SQLite3.SQLITE_OK else {
+        guard rc == SQLITE_OK else {
             if let errorMessagePtr {
                 let error = SQLight.Error.resultMessage(.fromSQLite(code: rc), String(cString: errorMessagePtr))
-                SQLite3.sqlite3_free(errorMessagePtr)
+                sqlite3_free(errorMessagePtr)
                 throw error
             } else {
                 throw SQLight.Error.result(.fromSQLite(code: rc))
@@ -66,7 +66,7 @@ fileprivate func execCallback(_ context: UnsafeMutableRawPointer?,
 
     guard let colTexts, let colNames, let context else {
         SQLight.logger.debug("Unexpected null(s) in sqlite3_exec callback args")
-        return SQLite3.SQLITE_ABORT
+        return SQLITE_ABORT
     }
 
     let wrapper: ExecCallbackWrapper = Unmanaged.fromOpaque(context).takeUnretainedValue()
@@ -92,8 +92,8 @@ fileprivate func execCallback(_ context: UnsafeMutableRawPointer?,
 
     guard wrapper.callback(values) else {
         // callback requested no more rows
-        return SQLite3.SQLITE_ABORT
+        return SQLITE_ABORT
     }
 
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }

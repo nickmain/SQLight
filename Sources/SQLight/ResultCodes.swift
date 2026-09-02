@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -20,11 +20,11 @@ public extension SQLight {
             }
         }
 
-        /// Get the underlying SQLite error code (or SQLite3.SQLITE_ERROR if none)
+        /// Get the underlying SQLite error code (or SQLITE_ERROR if none)
         public var sqliteCode: Int32 {
             switch self {
             case .result(let code): code.asSQLiteCode
-            case .message(_): SQLite3.SQLITE_ERROR
+            case .message(_): SQLITE_ERROR
             case .resultMessage(let code, _): code.asSQLiteCode
             }
         }
@@ -40,74 +40,74 @@ public extension SQLight {
 
         public var asSQLiteCode: Int32 {
             switch self {
-            case .ok        : SQLite3.SQLITE_OK
-            case .error     : SQLite3.SQLITE_ERROR
-            case .internal_ : SQLite3.SQLITE_INTERNAL
-            case .perm      : SQLite3.SQLITE_PERM
-            case .abort     : SQLite3.SQLITE_ABORT
-            case .busy      : SQLite3.SQLITE_BUSY
-            case .locked    : SQLite3.SQLITE_LOCKED
-            case .nomem     : SQLite3.SQLITE_NOMEM
-            case .readonly  : SQLite3.SQLITE_READONLY
-            case .interrupt : SQLite3.SQLITE_INTERRUPT
-            case .ioerr     : SQLite3.SQLITE_IOERR
-            case .corrupt   : SQLite3.SQLITE_CORRUPT
-            case .notfound  : SQLite3.SQLITE_NOTFOUND
-            case .full      : SQLite3.SQLITE_FULL
-            case .cantopen  : SQLite3.SQLITE_CANTOPEN
-            case .protocol_ : SQLite3.SQLITE_PROTOCOL
-            case .empty     : SQLite3.SQLITE_EMPTY
-            case .schema    : SQLite3.SQLITE_SCHEMA
-            case .toobig    : SQLite3.SQLITE_TOOBIG
-            case .constraint: SQLite3.SQLITE_CONSTRAINT
-            case .mismatch  : SQLite3.SQLITE_MISMATCH
-            case .misuse    : SQLite3.SQLITE_MISUSE
-            case .nolfs     : SQLite3.SQLITE_NOLFS
-            case .auth      : SQLite3.SQLITE_AUTH
-            case .format    : SQLite3.SQLITE_FORMAT
-            case .range     : SQLite3.SQLITE_RANGE
-            case .notadb    : SQLite3.SQLITE_NOTADB
-            case .notice    : SQLite3.SQLITE_NOTICE
-            case .warning   : SQLite3.SQLITE_WARNING
-            case .row       : SQLite3.SQLITE_ROW
-            case .done      : SQLite3.SQLITE_DONE
+            case .ok        : SQLITE_OK
+            case .error     : SQLITE_ERROR
+            case .internal_ : SQLITE_INTERNAL
+            case .perm      : SQLITE_PERM
+            case .abort     : SQLITE_ABORT
+            case .busy      : SQLITE_BUSY
+            case .locked    : SQLITE_LOCKED
+            case .nomem     : SQLITE_NOMEM
+            case .readonly  : SQLITE_READONLY
+            case .interrupt : SQLITE_INTERRUPT
+            case .ioerr     : SQLITE_IOERR
+            case .corrupt   : SQLITE_CORRUPT
+            case .notfound  : SQLITE_NOTFOUND
+            case .full      : SQLITE_FULL
+            case .cantopen  : SQLITE_CANTOPEN
+            case .protocol_ : SQLITE_PROTOCOL
+            case .empty     : SQLITE_EMPTY
+            case .schema    : SQLITE_SCHEMA
+            case .toobig    : SQLITE_TOOBIG
+            case .constraint: SQLITE_CONSTRAINT
+            case .mismatch  : SQLITE_MISMATCH
+            case .misuse    : SQLITE_MISUSE
+            case .nolfs     : SQLITE_NOLFS
+            case .auth      : SQLITE_AUTH
+            case .format    : SQLITE_FORMAT
+            case .range     : SQLITE_RANGE
+            case .notadb    : SQLITE_NOTADB
+            case .notice    : SQLITE_NOTICE
+            case .warning   : SQLITE_WARNING
+            case .row       : SQLITE_ROW
+            case .done      : SQLITE_DONE
             case .other(let code): code
             }
         }
 
         public static func fromSQLite(code: Int32) -> ResultCode {
             switch code {
-            case SQLite3.SQLITE_OK:         .ok
-            case SQLite3.SQLITE_ERROR:      .error
-            case SQLite3.SQLITE_INTERNAL:   .internal_
-            case SQLite3.SQLITE_PERM:       .perm
-            case SQLite3.SQLITE_ABORT:      .abort
-            case SQLite3.SQLITE_BUSY:       .busy
-            case SQLite3.SQLITE_LOCKED:     .locked
-            case SQLite3.SQLITE_NOMEM:      .nomem
-            case SQLite3.SQLITE_READONLY:   .readonly
-            case SQLite3.SQLITE_INTERRUPT:  .interrupt
-            case SQLite3.SQLITE_IOERR:      .ioerr
-            case SQLite3.SQLITE_CORRUPT:    .corrupt
-            case SQLite3.SQLITE_NOTFOUND:   .notfound
-            case SQLite3.SQLITE_FULL:       .full
-            case SQLite3.SQLITE_CANTOPEN:   .cantopen
-            case SQLite3.SQLITE_PROTOCOL:   .protocol_
-            case SQLite3.SQLITE_EMPTY:      .empty
-            case SQLite3.SQLITE_SCHEMA:     .schema
-            case SQLite3.SQLITE_TOOBIG:     .toobig
-            case SQLite3.SQLITE_CONSTRAINT: .constraint
-            case SQLite3.SQLITE_MISMATCH:   .mismatch
-            case SQLite3.SQLITE_MISUSE:     .misuse
-            case SQLite3.SQLITE_NOLFS:      .nolfs
-            case SQLite3.SQLITE_AUTH:       .auth
-            case SQLite3.SQLITE_FORMAT:     .format
-            case SQLite3.SQLITE_RANGE:      .range
-            case SQLite3.SQLITE_NOTADB:     .notadb
-            case SQLite3.SQLITE_NOTICE:     .notice
-            case SQLite3.SQLITE_WARNING:    .warning
-            case SQLite3.SQLITE_ROW:        .row
-            case SQLite3.SQLITE_DONE:       .done
+            case SQLITE_OK:         .ok
+            case SQLITE_ERROR:      .error
+            case SQLITE_INTERNAL:   .internal_
+            case SQLITE_PERM:       .perm
+            case SQLITE_ABORT:      .abort
+            case SQLITE_BUSY:       .busy
+            case SQLITE_LOCKED:     .locked
+            case SQLITE_NOMEM:      .nomem
+            case SQLITE_READONLY:   .readonly
+            case SQLITE_INTERRUPT:  .interrupt
+            case SQLITE_IOERR:      .ioerr
+            case SQLITE_CORRUPT:    .corrupt
+            case SQLITE_NOTFOUND:   .notfound
+            case SQLITE_FULL:       .full
+            case SQLITE_CANTOPEN:   .cantopen
+            case SQLITE_PROTOCOL:   .protocol_
+            case SQLITE_EMPTY:      .empty
+            case SQLITE_SCHEMA:     .schema
+            case SQLITE_TOOBIG:     .toobig
+            case SQLITE_CONSTRAINT: .constraint
+            case SQLITE_MISMATCH:   .mismatch
+            case SQLITE_MISUSE:     .misuse
+            case SQLITE_NOLFS:      .nolfs
+            case SQLITE_AUTH:       .auth
+            case SQLITE_FORMAT:     .format
+            case SQLITE_RANGE:      .range
+            case SQLITE_NOTADB:     .notadb
+            case SQLITE_NOTICE:     .notice
+            case SQLITE_WARNING:    .warning
+            case SQLITE_ROW:        .row
+            case SQLITE_DONE:       .done
             default: .other(code)
             }
         }

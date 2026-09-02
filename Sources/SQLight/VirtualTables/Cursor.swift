@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -119,6 +119,6 @@ public extension SQLight.Cursor.Filter {
 }
 
 internal struct SQLiteCursor {
-    var sqlite3_vtab_cursor: SQLite3.sqlite3_vtab_cursor
+    var sqlite3_vtab_cursor: sqlite3_vtab_cursor
     var cursor: SQLight.Cursor?
 }

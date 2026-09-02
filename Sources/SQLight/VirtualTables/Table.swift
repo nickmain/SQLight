@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight {
 
@@ -188,6 +188,6 @@ public extension SQLight {
 
 // extension of sqlite3_vtab to hold a Table reference
 internal struct SQLiteVTable {
-    var sqlite3_vtab: SQLite3.sqlite3_vtab
+    var sqlite3_vtab: sqlite3_vtab
     weak var table: SQLight.Table?
 }

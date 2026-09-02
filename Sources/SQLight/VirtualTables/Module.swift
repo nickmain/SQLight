@@ -1,7 +1,7 @@
-// Copyright (c) 2024 David N Main
+// Copyright (c) 2026 David N Main
 
 import Foundation
-import SQLite3
+import SQLiteCore
 
 public extension SQLight.Connection {
 
@@ -89,8 +89,8 @@ public extension SQLight {
             // ptr to pass unmanaged weak reference to module registration
             let selfPtr = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
 
-            let rc = SQLite3.sqlite3_create_module(connectionPtr, name, pSqlite3Module.pointer, selfPtr)
-            guard rc == SQLite3.SQLITE_OK else {
+            let rc = sqlite3_create_module(connectionPtr, name, pSqlite3Module.pointer, selfPtr)
+            guard rc == SQLITE_OK else {
                 throw Error.result(.fromSQLite(code: rc))
             }
         }
@@ -149,7 +149,7 @@ public extension SQLight {
 
     /// Allocate an error message that SQLite will later free using sqlite3_free()
     static func allocate(errorMsg: String) -> UnsafeMutablePointer<CChar> {
-        withVaList([]) { SQLite3.sqlite3_vmprintf(errorMsg, $0) }
+        withVaList([]) { sqlite3_vmprintf(errorMsg, $0) }
     }
 }
 
@@ -158,7 +158,7 @@ fileprivate func setError(message: String, in pzErr: UnsafeMutablePointer<Unsafe
     if let pzErr {
         pzErr.pointee = SQLight.allocate(errorMsg: message)
     }
-    return SQLite3.SQLITE_ERROR
+    return SQLITE_ERROR
 }
 
 // common create/connect
@@ -200,8 +200,8 @@ fileprivate func createOrConnect(isConnect: Bool,
 
     // declare the schema of the table
     let declarationSql = table.declarationSql
-    let rc = SQLite3.sqlite3_declare_vtab(connectionPtr, declarationSql)
-    guard rc == SQLite3.SQLITE_OK else {
+    let rc = sqlite3_declare_vtab(connectionPtr, declarationSql)
+    guard rc == SQLITE_OK else {
         return rc
     }
 
@@ -214,7 +214,7 @@ fileprivate func createOrConnect(isConnect: Bool,
         ppVTab.pointee = $0
     }
 
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xCreate(_ connectionPtr: OpaquePointer?, _ auxPtr: UnsafeMutableRawPointer?,
@@ -264,7 +264,7 @@ fileprivate func cursor(from pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?
 }
 
 fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pIndexInfo: UnsafeMutablePointer<sqlite3_index_info>?) -> Int32 {
-    guard let table = table(from: pVTab), let pIndexInfo else { return SQLite3.SQLITE_ERROR }
+    guard let table = table(from: pVTab), let pIndexInfo else { return SQLITE_ERROR }
 
     var constraints  = [SQLight.Table.Index.Constraint]()
     let constraintCount = Int(pIndexInfo.pointee.nConstraint)
@@ -277,7 +277,7 @@ fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pInd
 
             var argument: SQLight.Value?
             var pArgument: OpaquePointer? = nil
-            SQLite3.sqlite3_vtab_rhs_value(pIndexInfo, Int32(constraintIndex), &pArgument)
+            sqlite3_vtab_rhs_value(pIndexInfo, Int32(constraintIndex), &pArgument)
             if let pArgument {
                 argument = SQLight.Value(from: pArgument)
             }
@@ -300,7 +300,7 @@ fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pInd
                                         colUsedBits: pIndexInfo.pointee.colUsed)
 
     switch table.bestIndexCaching(info: info) {
-    case .none: return SQLite3.SQLITE_CONSTRAINT // no solution
+    case .none: return SQLITE_CONSTRAINT // no solution
     case .index(let index):
         if index.orderByConsumed {
             pIndexInfo.pointee.orderByConsumed = 1
@@ -309,7 +309,7 @@ fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pInd
             pIndexInfo.pointee.estimatedRows = Int64(rowCount)
         }
         if index.zeroOrOneRow {
-            pIndexInfo.pointee.idxFlags = SQLite3.SQLITE_INDEX_SCAN_UNIQUE
+            pIndexInfo.pointee.idxFlags = SQLITE_INDEX_SCAN_UNIQUE
         }
         pIndexInfo.pointee.estimatedCost = index.estimatedCost
 
@@ -324,45 +324,45 @@ fileprivate func xBestIndex(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pInd
             }
         }
 
-        return SQLite3.SQLITE_OK
+        return SQLITE_OK
     }
 }
 
 fileprivate func xDisconnect(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
-    guard let table = table(from: pVTab) else { return SQLite3.SQLITE_ERROR }
+    guard let table = table(from: pVTab) else { return SQLITE_ERROR }
     table.disconnect()
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xDestroy(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
-    guard let table = table(from: pVTab) else { return SQLite3.SQLITE_ERROR }
+    guard let table = table(from: pVTab) else { return SQLITE_ERROR }
     table.destroy()
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xOpen(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ ppCursor: UnsafeMutablePointer<UnsafeMutablePointer<sqlite3_vtab_cursor>?>?) -> Int32 {
-    guard let table = table(from: pVTab), let ppCursor else { return SQLite3.SQLITE_ERROR }
+    guard let table = table(from: pVTab), let ppCursor else { return SQLITE_ERROR }
     let cursor = table.openCursor()
 
     withUnsafeMutablePointer(to: &cursor.sqliteCursor.sqlite3_vtab_cursor) {
         ppCursor.pointee = $0
     }
 
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xClose(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?) -> Int32 {
-    guard let cursor = cursor(from: pCursor) else { return SQLite3.SQLITE_ERROR }
+    guard let cursor = cursor(from: pCursor) else { return SQLITE_ERROR }
     cursor.close()
     cursor.sqliteCursor.cursor = nil // release the cursor
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xFilter(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, _ indexNum: Int32, _ indexString: UnsafePointer<CChar>?, _ argCount: Int32, _ ppArgs: UnsafeMutablePointer<OpaquePointer?>?) -> Int32 {
     guard let cursor = cursor(from: pCursor), 
           let table = cursor.table,
           let index = table.getIndex(at: Int(indexNum))
-    else { return SQLite3.SQLITE_ERROR }
+    else { return SQLITE_ERROR }
 
     var args = [SQLight.Value]()
 
@@ -375,18 +375,18 @@ fileprivate func xFilter(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, 
     } else {
         if index.constraints.count > 0 {
             SQLight.logger.debug("xFilter args do not match constraints in index")
-            return SQLite3.SQLITE_ERROR
+            return SQLITE_ERROR
         }
     }
 
     cursor.filter(index: index, arguments: args)
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xNext(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?) -> Int32 {
-    guard let cursor = cursor(from: pCursor) else { return SQLite3.SQLITE_ERROR }
-    guard cursor.next() else { return SQLite3.SQLITE_ERROR }
-    return SQLite3.SQLITE_OK
+    guard let cursor = cursor(from: pCursor) else { return SQLITE_ERROR }
+    guard cursor.next() else { return SQLITE_ERROR }
+    return SQLITE_OK
 }
 
 fileprivate func xEof(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?) -> Int32 {
@@ -395,23 +395,23 @@ fileprivate func xEof(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?) -> 
 }
 
 fileprivate func xColumn(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, _ pContext: OpaquePointer?, _ colIndex: Int32) -> Int32 {
-    guard let cursor = cursor(from: pCursor), let pContext else { return SQLite3.SQLITE_ERROR }
+    guard let cursor = cursor(from: pCursor), let pContext else { return SQLITE_ERROR }
     if let value = cursor.columnValue(at: Int(colIndex)) {
         value.setReturnValue(for: pContext)
     }
 
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xRowid(_ pCursor: UnsafeMutablePointer<sqlite3_vtab_cursor>?, _ pRowId: UnsafeMutablePointer<sqlite3_int64>?) -> Int32 {
-    guard let cursor = cursor(from: pCursor), let pRowId else { return SQLite3.SQLITE_ERROR }
+    guard let cursor = cursor(from: pCursor), let pRowId else { return SQLITE_ERROR }
     let id = cursor.currentRowId
     pRowId.pointee = Int64(id)
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCount: Int32, _ ppArgs:     UnsafeMutablePointer<OpaquePointer?>?, _ pRowId: UnsafeMutablePointer<sqlite3_int64>?) -> Int32 {
-    guard let pVTab, let table = table(from: pVTab), let ppArgs, argCount > 0 else { return SQLite3.SQLITE_ERROR }
+    guard let pVTab, let table = table(from: pVTab), let ppArgs, argCount > 0 else { return SQLITE_ERROR }
 
     // maybe set an error message in the pVTab and return the code
     func tableError(error: SQLight.Error? = nil, msg: String? = nil, pVTab: UnsafeMutablePointer<sqlite3_vtab>) -> Int32 {
@@ -421,7 +421,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
                 return code.asSQLiteCode
             case .message(let msg):
                 pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
-                return SQLite3.SQLITE_ERROR
+                return SQLITE_ERROR
             case .resultMessage(let code, let msg):
                 pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
                 return code.asSQLiteCode
@@ -429,7 +429,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
         } else if let msg {
             pVTab.pointee.zErrMsg = SQLight.allocate(errorMsg: msg)
         }
-        return SQLite3.SQLITE_ERROR
+        return SQLITE_ERROR
     }
 
     let oldRowId = SQLight.Value.init(from: ppArgs[0])
@@ -437,7 +437,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
     if argCount == 1 { // DELETE
         do {
             try table.delete(key: oldRowId)
-            return SQLite3.SQLITE_OK
+            return SQLITE_OK
         } catch let error as SQLight.Error {
             return tableError(error: error, pVTab: pVTab)
         } catch {
@@ -456,7 +456,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
             if let rowId = try table.insert(values: colValues) {
                 pRowId?.pointee = Int64(rowId) // return the new row id
             }
-            return SQLite3.SQLITE_OK
+            return SQLITE_OK
         } catch let error as SQLight.Error {
             return tableError(error: error, pVTab: pVTab)
         } catch {
@@ -467,7 +467,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
     if newRowId == oldRowId { // UPDATE
         do {
             try table.update(key: oldRowId, values: colValues)
-            return SQLite3.SQLITE_OK
+            return SQLITE_OK
         } catch let error as SQLight.Error {
             return tableError(error: error, pVTab: pVTab)
         } catch {
@@ -478,7 +478,7 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
     // otherwise an UPDATE with rowid or PRIMARY KEY change
     do {
         try table.update(key: oldRowId, newKey: newRowId, values: colValues)
-        return SQLite3.SQLITE_OK
+        return SQLITE_OK
     } catch let error as SQLight.Error {
         return tableError(error: error, pVTab: pVTab)
     } catch {
@@ -488,42 +488,42 @@ fileprivate func xUpdate(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ argCoun
 
 fileprivate func xBegin(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xSync(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xCommit(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xRollback(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xRename(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ pNewName: UnsafePointer<CChar>?) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xSavepoint(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ savepoint: Int32) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xRelease(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ savepoint: Int32) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xRollbackTo(_ pVTab: UnsafeMutablePointer<sqlite3_vtab>?, _ savepoint: Int32) -> Int32 {
     // TODO
-    return SQLite3.SQLITE_OK
+    return SQLITE_OK
 }
 
 fileprivate func xShadowName(_ name: UnsafePointer<CChar>?) -> Int32 {
@@ -531,7 +531,7 @@ fileprivate func xShadowName(_ name: UnsafePointer<CChar>?) -> Int32 {
     return 0 // false
 }
 
-fileprivate func xFindFunction(_ pVtab: UnsafeMutablePointer<SQLite3.sqlite3_vtab>?,
+fileprivate func xFindFunction(_ pVtab: UnsafeMutablePointer<sqlite3_vtab>?,
                                _ nArg: Int32,
                                _ zName: UnsafePointer<CChar>?,
                                _ pxFunc: UnsafeMutablePointer<(@convention(c) (OpaquePointer?, Int32, UnsafeMutablePointer<OpaquePointer?>?) -> Void)?>?,
